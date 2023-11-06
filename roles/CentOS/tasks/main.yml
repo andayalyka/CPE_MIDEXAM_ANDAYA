@@ -1,0 +1,199 @@
+---
+    - name: Install prerequisites
+      yum:
+        name:
+          - java-1.8.0-openjdk
+          - epel-release
+          - wget
+          - which
+        state: present
+      become: yes
+
+    - name: Add Elasticsearch RPM repository
+      shell: curl -O https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+    - name: Add Elasticsearch YUM repository
+      copy:
+        content: |
+          [elasticsearch-7.x]
+          name=Elasticsearch repository for 7.x packages
+          baseurl=https://artifacts.elastic.co/packages/7.x/yum
+          gpgcheck=1
+          gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+          enabled=1
+          autorefresh=1
+          type=rpm-md
+        dest: /etc/yum.repos.d/elasticsearch.repo
+      become: yes
+
+    - name: Install Elasticsearch
+      yum:
+        name: elasticsearch
+        state: present
+      become: yes
+
+    - name: Enable and start Elasticsearch service
+      systemd:
+        name: elasticsearch
+        enabled: yes
+        state: started
+      become: yes
+
+    - name: Install Kibana
+      yum:
+        name: kibana
+        state: present
+      become: yes
+
+    - name: Enable and start Kibana service
+      systemd:
+        name: kibana
+        enabled: yes
+        state: started
+      become: yes
+
+    - name: Install Logstash
+      yum:
+        name: logstash
+        state: present
+      become: yes
+
+    - name: Enable and start Logstash service
+      systemd:
+        name: logstash
+        enabled: yes
+        state: started
+      become: yes
+      
+    - name: Restart Elasticsearch and Kibana
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+      loop:
+        - elasticsearch
+        - kibana
+
+    - name: install nagios for CentOS
+      dnf:
+        name:
+          - nagios
+          - nagios-plugins-all
+      when: ansible_distribution == "CentOS"
+
+    - name: enable and start nagios service
+      service:
+        name: nagios
+        state: started
+        enabled: yes
+      when: ansible_distribution == "CentOS"
+
+    # Install dependencies
+    - name: Install EPEL repository for CentOS
+      yum:
+        name: epel-release
+        state: latest
+      when: ansible_distribution == "CentOS"
+
+    # Install Prometheus
+    - name: Install Prometheus package
+      yum:
+        name: prometheus
+        state: present
+
+    # Configure Prometheus
+    - name: Copy Prometheus configuration file
+      copy:
+        src: prometheus.yml
+        dest: /etc/prometheus/prometheus.yml
+        owner: root
+        group: root
+        mode: 0644
+
+    # Start and enable Prometheus service
+    - name: Start Prometheus service
+      systemd:
+        name: prometheus
+        state: started
+        enabled: yes
+
+    # Install InfluxDB
+    - name: Install InfluxDB package
+      yum:
+        name: influxdb
+        state: present
+
+    # Configure InfluxDB
+    - name: Copy InfluxDB configuration file
+      copy:
+        src: influxdb.conf
+        dest: /etc/influxdb/influxdb.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    # Start and enable InfluxDB service
+    - name: Start InfluxDB service
+      systemd:
+        name: influxdb
+        state: started
+        enabled: yes
+
+    # Install Grafana
+    - name: Install Grafana package
+      yum:
+        name: grafana
+        state: present
+
+    # Configure Grafana
+    - name: Copy Grafana configuration file
+      copy:
+        src: grafana.ini
+        dest: /etc/grafana/grafana.ini
+        owner: root
+        group: root
+        mode: 0644
+
+    # Start and enable Grafana service
+    - name: Start Grafana service
+      systemd:
+        name: grafana-server
+        state: started
+        enabled: yes
+
+    # Install Apache
+    - name: Install Apache package
+      yum:
+        name: httpd
+        state: present
+
+    # Start and enable Apache service
+    - name: Start Apache service
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    # Install MariaDB
+    - name: Install MariaDB package
+      yum:
+        name: mariadb-server
+        state: present
+
+    # Start and enable MariaDB service
+    - name: Start MariaDB service
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    # Install PHP
+    - name: Install PHP package
+      yum:
+        name: php php-mysqlnd
+        state: present
+
+    # Restart Apache to recognize PHP
+    - name: Restart Apache service
+      service:
+        name: httpd
+        state: restarted

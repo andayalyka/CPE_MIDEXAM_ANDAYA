@@ -1,0 +1,197 @@
+---
+    - name: Install prerequisites
+      apt:
+        name:
+          - default-jre
+          - apt-transport-https
+          - curl
+          - software-properties-common
+        state: present
+      become: yes
+
+    - name: Add Elasticsearch APT repository key
+      apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+      become: yes
+
+    - name: Add Elasticsearch APT repository
+      apt_repository:
+        repo: "deb https://artifacts.elastic.co/packages/7.x/apt stable main"
+        state: present
+      become: yes
+
+    - name: Install Elasticsearch
+      apt:
+        name: elasticsearch
+        state: present
+      become: yes
+
+    - name: Enable and start Elasticsearch service
+      systemd:
+        name: elasticsearch
+        enabled: yes
+        state: started
+      become: yes
+
+    - name: Install Kibana
+      apt:
+        name: kibana
+        state: present
+      become: yes
+
+    - name: Enable and start Kibana service
+      systemd:
+        name: kibana
+        enabled: yes
+        state: started
+      become: yes
+
+    - name: Install Logstash
+      apt:
+        name: logstash
+        state: present
+      become: yes
+
+    - name: Enable and start Logstash service
+      systemd:
+        name: logstash
+        enabled: yes
+        state: started
+      become: yes
+      
+    - name: Restart Elasticsearch and Kibana
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+      loop:
+        - elasticsearch
+        - kibana
+
+    - name: install nagios fot Ubuntu
+      package:
+        name:
+         - nagios3
+         - nagios-plugins
+      when: ansible_distribution == "Ubuntu"
+
+    - name: enable and start nagios service
+      service:
+        name: nagios3
+        state: started
+        enabled: yes
+      when: ansible_distribution == "Ubuntu"
+   
+    # Install Apache
+    - name: Install Apache package
+      apt:
+        name: apache2
+        state: latest
+
+    # Start and enable Apache service
+    - name: Start Apache service
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+    # Install MariaDB
+    - name: Install MariaDB package
+      apt:
+        name: mariadb-server
+        state: present
+
+    # Start and enable MariaDB service
+    - name: Start MariaDB service
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    # Install PHP
+    - name: install apache and php for Ubuntu servers
+      tags: apache, apache2, ubuntu
+      apt:
+        name:
+        - libapache2-mod-php
+        state: latest
+      when: ansible_distribution == "Ubuntu"
+
+    # Restart Apache to recognize PHP
+    - name: Restart Apache service
+      service:
+        name: apache2
+        state: restarted
+
+    # Install dependencies
+    - name: Install dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - wget
+        - tar
+
+    # Install Prometheus
+    - name: Install Prometheus package
+      apt:
+        name: prometheus
+        state: present
+
+    # Configure Prometheus
+    - name: Copy Prometheus configuration file
+      copy:
+        src: prometheus.yml
+        dest: /etc/prometheus/prometheus.yml
+        owner: root
+        group: root
+        mode: 0644
+
+    # Start and enable Prometheus service
+    - name: Start Prometheus service
+      systemd:
+        name: prometheus
+        state: started
+        enabled: yes
+
+    # Install InfluxDB
+    - name: Install InfluxDB package
+      apt:
+        name: influxdb
+        state: present
+
+    # Configure InfluxDB
+    - name: Copy InfluxDB configuration file
+      copy:
+        src: influxdb.conf
+        dest: /etc/influxdb/influxdb.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    # Start and enable InfluxDB service
+    - name: Start InfluxDB service
+      systemd:
+        name: influxdb
+        state: started
+        enabled: yes
+
+    # Install Grafana
+    - name: Install Grafana package
+      snap:
+        name: grafana
+        state: present
+
+    # Create Grafana directory
+    - name: Create Grafana directory
+      file:
+        path: /etc/grafana
+        state: directory
+
+    # Configure Grafana
+    - name: Copy Grafana configuration file
+      copy:
+        src: grafana.ini
+        dest: /etc/grafana/grafana.ini
+        owner: root
+        group: root
+        mode: 0644
